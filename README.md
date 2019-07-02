@@ -1,4 +1,4 @@
-# Cherry Auth
+![Frame](https://user-images.githubusercontent.com/23535123/60550765-12eeb600-9cf7-11e9-92e8-06332c17f835.png)
 A central authentication microservice
 
 # Login
