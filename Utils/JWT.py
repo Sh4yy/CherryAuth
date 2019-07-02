@@ -31,32 +31,35 @@ def get_secret():
     return config['jwt']['secret']
 
 
-def gen_jwt(uid: str, ttl: int, algorithm='HS256'):
+def gen_jwt(sid: str, uid: str, ttl: int, algorithm='HS256'):
     """
     generate a new jwt token
+    :param sid: session id
     :param uid: user_id as string
     :param ttl: time to live in seconds
     :param algorithm: jwt algorithm used (defaults to HS256)
-    :return: jwt token (str)
+    :return: jwt token (str), payload
     """
     iat = datetime.utcnow()
     exp = datetime.utcnow() + timedelta(seconds=ttl)
-    return jwt.encode({
+    payload = {
+        "sid": sid,
         "iat": iat,
         "exp": exp,
         "uid": uid
-    }, key=get_secret(),
-       algorithm=algorithm)
+    }
+    return jwt.encode(payload, key=get_secret(),
+                      algorithm=algorithm), payload
 
 
 def verify_jwt(token: str, algorithm='HS256'):
     """
     verify a jwt token
     :param token: jwt token (str)
+    :param algorithm: jwt algorithm used (defaults to HS256)
     :return: payload if jwt is valid
     :raises ExpiredSignatureError: if signature is expired
     :raises InvalidSignatureError: if signature is not valid
     :raises InvalidTokenError: for the rest of the token errors
     """
-
     return jwt.decode(token, get_secret(), verify=True, algorithm=algorithm)

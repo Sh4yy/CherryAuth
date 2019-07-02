@@ -8,6 +8,19 @@ class Credentials(EmbeddedDocument):
     hashed_pswd = BinaryField()
     salt = BinaryField()
 
+    @classmethod
+    def init_and_salt(cls, pswd: str):
+        """
+        initialize a new Credentials instance
+        and salt and hash the password
+        :param pswd: pswd
+        :return: Credentials instance
+        """
+        creds = cls()
+        creds.salt = Salting.gen_salt()
+        creds.hashed_pswd = Salting.hash_pswd(pswd, creds.salt)
+        return creds
+
     def does_math(self, pswd: str):
         """
         check whether a given pswd matches
@@ -25,13 +38,15 @@ class User(Document):
     credentials = EmbeddedDocumentField(Credentials)
 
     @classmethod
-    def register(cls, gid):
+    def register(cls, gid, credentials=None):
         """
         register a new user
         :param gid: user's gid
+        :param credentials: Credentials instance
         :return: User instance
         """
         user = cls(gid=gid)
+        user.credentials = credentials
         user.save()
         return user
 
