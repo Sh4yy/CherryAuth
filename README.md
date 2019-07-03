@@ -244,8 +244,65 @@ Message: `incorrect credentials`
 
 Note that for this route, kill_session is an optional body field which will kill every active session for this user if is set to True. Also, old password must be passed with user id as basic authorization header
 
+## Verify JWT Token
+ verify a user's jwt token.\
+**Route**: `/v1/verify`\
+**Method** : `POST`\
+**Port** : `5001`\
+**Authorization** : `Bearer Auth` \
+**Headers**:
+```json
+{
+    "Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzaWQiOiJhODY2YTZmODQxNjY5YTcyOTg0YjAwNTVlYWNiMDU5ZCIsImlhdCI6MTU2MjE4NTYxMiwiZXhwIjoxNTYyMTg5MjEyLCJ1aWQiOiJhMjk4OGNhMjA5YWQwOTA3ZDNhZjljMWMzYjdhY2IxZSJ9.72dUB4p4g_L3Bx6UpqQZMCVn3So2Bn7K2xulDWFRJEQ"
+}
+```
+**Response**:
+```json
+{
+    "valid": true,
+    "payload": {
+        "sid": "a866a6f841669a72984b0055eacb059d",
+        "iat": 1562185612,
+        "exp": 1562189212,
+        "uid": "a2988ca209ad0907d3af9c1c3b7acb1e"
+    },
+    "ok": true,
+    "timestamp": 1562186902.8546676636
+}
+```
 
+**Possiple Errors**
 
+```
+If missing authorization header.
+Code: `400 BAD REQUEST`
+Message: `missing authorization header`
+```
+```
+If authorization method is not Bearer.
+Code: `400 BAD REQUEST`
+Message: `invalid authorization method`
+```
+```
+If authorization header is missing the token.
+Code: `400 BAD REQUEST`
+Message: `invalid authorization token`
+```
+```
+If JWT token is Expired.
+Code: `401 Unauthorized`
+Message: `expired signature`
+```
+```
+If JWT token has an invalid signature.
+Code: `401 Unauthorized`
+Message: `invalid signature`
+```
+```
+Other possible JWT errors.
+Code: `401 Unauthorized`
+Message: `invalid token`
+```
 
 
 

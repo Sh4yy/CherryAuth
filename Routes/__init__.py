@@ -92,9 +92,9 @@ async def verify(request: Request):
     except TokenDoesNotExist:
         return err_resp(400, "missing authorization header")
     except InvalidMethod:
-        return err_resp(400, "bad authorization token")
+        return err_resp(400, "invalid authorization method")
     except InvalidValue:
-        return err_resp(400, "bad authorization token")
+        return err_resp(400, "invalid authorization token")
     except JWT.ExpiredSignatureError:
         return err_resp(401, "expired signature")
     except JWT.InvalidSignatureError:
