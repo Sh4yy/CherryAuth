@@ -30,6 +30,7 @@ def login(gid, pswd):
     :param pswd: user's password
     :return: Session instance
     :raises DoesNotExist:
+    :raise IncorrectCredentials:
     """
 
     user = User.find_with_gid(gid)

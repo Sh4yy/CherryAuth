@@ -6,23 +6,26 @@ import basicauth
 import Controllers
 from Utils.Exceptions import *
 from mongoengine import DoesNotExist
+from Utils import JWT
 
 
 bp = Blueprint()
 
 
-def err_resp(code: int, msg: str):
+def err_resp(code: int, msg: str, err_subcode=None):
     """
     generate error response
     :param code: error code
     :param msg: error msg
+    :param err_subcode: specific error details
     :return: JsonResponse
     """
     return JsonResponse({
         "ok": False,
         "code": code,
         "msg": msg,
-        "timestamp": time()
+        "timestamp": time(),
+        "error_subcode": err_subcode
     }, status_code=code)
 
 
@@ -73,6 +76,33 @@ def extract_bearer(authorization):
     return split[0]
 
 
+@bp.route('/verify', methods=['POST'])
+async def verify(request: Request):
+    """
+    verify a user's jwt token
+    """
+    try:
+
+        jwt_token = extract_bearer(request.headers.get('Authorization'))
+        return suc_resp({
+            "valid": True,
+            "payload": JWT.verify_jwt(jwt_token)
+        })
+
+    except TokenDoesNotExist:
+        return err_resp(400, "missing authorization header")
+    except InvalidMethod:
+        return err_resp(400, "bad authorization token")
+    except InvalidValue:
+        return err_resp(400, "bad authorization token")
+    except JWT.ExpiredSignatureError:
+        return err_resp(401, "expired signature")
+    except JWT.InvalidSignatureError:
+        return err_resp(401, "invalid signature")
+    except JWT.InvalidTokenError:
+        return err_resp(401, "invalid token")
+
+
 @bp.route('/register', methods=['POST'])
 async def register(request: Request):
     """
@@ -119,6 +149,8 @@ async def login(request: Request):
         return err_resp(400, "missing authorization header")
     except DoesNotExist:
         return err_resp(404, "user does not exist")
+    except IncorrectCredentials:
+        return err_resp(401, "incorrect credentials")
 
 
 @bp.route('/token/logout', methods=['POST'])
@@ -219,7 +251,4 @@ async def reset_password(request: Request):
     pass
 
 
-@bp.route('/verify', methods=['POST'])
-async def verify(request: Request):
-    # provide token and jwt code
-    pass
+

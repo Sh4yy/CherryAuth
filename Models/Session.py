@@ -6,7 +6,7 @@ from datetime import datetime
 
 class Session(Document):
 
-    session_id = StringField(primary_key=True, unique=True)
+    session_id = StringField(primary_key=True)
     refresh_token = StringField(unique=True)
     create_date = DateTimeField(default=datetime.utcnow)
     user = ReferenceField(User, reverse_delete_rule=CASCADE)
@@ -14,8 +14,8 @@ class Session(Document):
 
     @classmethod
     def init(cls, user):
-        session = cls(user=user, session_id=IDGenerator.gen_access_token(),
-                      refresh_token=IDGenerator.gen_access_token())
+        session = cls(user=user, session_id=IDGenerator.gen_access_token(length=16),
+                      refresh_token=IDGenerator.gen_access_token(length=32))
         session.save()
         return session
 

@@ -1,4 +1,5 @@
 import jwt
+from jwt import *
 from datetime import datetime, timedelta
 from Utils import config
 import secrets

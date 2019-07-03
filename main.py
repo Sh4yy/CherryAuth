@@ -1,10 +1,16 @@
-from app import init_db, create_app
+from app import init_db, create_app, create_secret
 
 
 def main():
+    """
+    initialize mongodb
+    create jwt secret if does not exist
+    run the webserver
+    """
+
     init_db()
-    app = create_app()
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    create_secret()
+    create_app().run(host="0.0.0.0", port=5001, debug=True)
 
 
 if __name__ == '__main__':

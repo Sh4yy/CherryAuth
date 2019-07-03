@@ -33,7 +33,7 @@ class Credentials(EmbeddedDocument):
 class User(Document):
 
     # user's global unique id
-    gid = StringField(primary_key=True, unique=True)
+    gid = StringField(primary_key=True)
     reg_date = DateField(default=datetime.utcnow)
     credentials = EmbeddedDocumentField(Credentials)
 
