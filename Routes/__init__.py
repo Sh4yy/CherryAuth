@@ -73,7 +73,7 @@ def extract_bearer(authorization):
     if split[0] != "Bearer":
         raise InvalidMethod()
 
-    return split[0]
+    return split[1]
 
 
 @bp.route('/verify', methods=['POST'])
@@ -153,7 +153,7 @@ async def login(request: Request):
         return err_resp(401, "incorrect credentials")
 
 
-@bp.route('/token/logout', methods=['POST'])
+@bp.route('/logout', methods=['POST'])
 async def logout(request: Request):
     """
     provide refresh token as Bearer token
@@ -169,13 +169,13 @@ async def logout(request: Request):
         })
 
     except InvalidMethod:
-        err_resp(400, "bad authorization method")
+        err_resp(400, "invalid authorization method")
     except InvalidValue:
-        err_resp(400, "bad authorization token")
+        err_resp(400, "invalid authorization token")
     except TokenDoesNotExist:
-        return err_resp(400, "missing authorization token")
+        return err_resp(400, "missing authorization header")
     except DoesNotExist:
-        return err_resp(404, "session was not found")
+        return err_resp(404, "session does not exist")
 
 
 @bp.route('/token/refresh', methods=['GET'])
@@ -199,13 +199,13 @@ async def refresh_token(request: Request):
         })
 
     except InvalidMethod:
-        return err_resp(400, "bad authorization method")
+        return err_resp(400, "invalid authorization method")
     except InvalidValue:
-        return err_resp(400, "bad authorization token")
+        return err_resp(400, "invalid authorization token")
     except TokenDoesNotExist:
         return err_resp(400, "missing authorization header")
     except DoesNotExist:
-        return err_resp(404, "session was not found")
+        return err_resp(404, "session does not exist")
 
 
 @bp.route('/password/change', methods=['POST'])
@@ -234,9 +234,9 @@ async def change_password(request: Request):
     except TokenDoesNotExist:
         return err_resp(400, "missing authorization header")
     except DoesNotExist:
-        return err_resp(404, "user was not found")
+        return err_resp(404, "user does not exist")
     except WrongPassword:
-        return err_resp(401, "wrong password")
+        return err_resp(401, "incorrect credentials")
 
 
 @bp.route('/password/reset/request', methods=['POST'])
