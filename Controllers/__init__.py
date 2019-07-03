@@ -1,5 +1,5 @@
 from Models import User, Credentials, Session
-from Utils.Exceptions import UserAlreadyExist, IncorrectCredentials
+from Utils.Exceptions import *
 from mongoengine import DoesNotExist
 
 
@@ -60,3 +60,45 @@ def refresh_token(ref_token):
     """
 
     return Session.find_with_refresh_token(ref_token)
+
+
+def terminate_sessions(gid):
+    """
+    terminate all sessions for a user
+    :param gid: user's gid
+    :return: True on success
+    :raises DoesNotExist: if user was not found
+    """
+
+    user = User.find_with_gid(gid)
+    sessions = Session.find_with_user(user)
+    if not sessions:
+        return True
+
+    sessions.delete()
+    return True
+
+
+def change_password(gid, old_pswd, new_pswd, kill_sessions=False):
+    """
+    change user's password
+    :param gid: user's gid
+    :param old_pswd: user's old password
+    :param new_pswd: user's new password
+    :param kill_sessions: terminate all active sessions
+    :return: True on success
+    :raises DoesNotExist: if user was not found
+    :raises WrongPassword: if old password is not valid
+    """
+
+    user = User.find_with_gid(gid)
+    if not user.credentials.does_math(old_pswd):
+        raise WrongPassword()
+
+    user.credentials = Credentials.init_and_salt(new_pswd)
+    user.save()
+
+    if kill_sessions:
+        terminate_sessions(gid)
+
+    return True

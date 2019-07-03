@@ -21,3 +21,7 @@ class InvalidMethod(AuthExceptions):
 
 class InvalidValue(AuthExceptions):
     pass
+
+
+class WrongPassword(AuthExceptions):
+    pass

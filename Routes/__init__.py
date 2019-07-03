@@ -162,10 +162,22 @@ async def refresh_token(request: Request):
     })
 
 
-@bp.route('/password/reset', methods=['POST'])
-async def reset_password(request: Request):
+@bp.route('/password/change', methods=['POST'])
+async def change_password(request: Request):
     # provide old password and new
-    pass
+
+    gid, old_pswd = basicauth.decode(request.headers.get('Authorization'))
+    json_data = await request.json()
+    if 'new_password' not in json_data:
+        return err_resp(400, "missing new_password field")
+
+    new_password = json_data['new_password']
+    terminate_sessions = json_data.get('terminate_sessions', False)
+
+    try:
+        Controllers.change_password(gid, old_pswd, new_password, terminate_sessions)
+    except:
+        pass
 
 
 @bp.route('/password/forgot', methods=['POST'])
