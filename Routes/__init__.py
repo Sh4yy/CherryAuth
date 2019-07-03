@@ -7,6 +7,7 @@ import Controllers
 from Utils.Exceptions import *
 from mongoengine import DoesNotExist
 
+
 bp = Blueprint()
 
 
@@ -81,15 +82,57 @@ async def login(request: Request):
 
 @bp.route('/token/logout', methods=['POST'])
 async def logout(request: Request):
-    # provide refresh token to be logged out
-    pass
+    """
+    provide refresh token as Bearer token
+    """
+    auth = request.headers.get('Authorization')
+    if not auth:
+        return err_resp(400, "missing authorization token")
+
+    method, token = auth.split(" ")
+    if not method or not token or method != "Bearer":
+        return err_resp(400, "bad authorization token")
+
+    try:
+        session = Controllers.logout(token)
+    except DoesNotExist:
+        return err_resp(404, "session was not found")
+
+    return suc_resp({
+        "logged_out": True,
+        "token": token,
+        "gid": session.user.gid
+    })
 
 
 @bp.route('/token/refresh', methods=['GET'])
-async def refresh_token(request: Request, refresh_token):
-    # refresh jwt token using refresh token
-    # Authorization: Bearer [Refresh Token]
-    pass
+async def refresh_token(request: Request):
+    """
+    refresh jwt token using refresh token
+    Authorization: Bearer [Refresh Token]
+    """
+    auth = request.headers.get('Authorization')
+    if not auth:
+        return err_resp(400, "missing authorization token")
+
+    method, token = auth.split(" ")
+    if not method or not token or method != "Bearer":
+        return err_resp(400, "bad authorization token")
+
+    try:
+        session = Controllers.refresh_token(token)
+    except DoesNotExist:
+        return err_resp(404, "session was not found")
+
+    jwt_token, payload = session.generate_jwt()
+    return suc_resp({
+        "jwt": {
+            "token": jwt_token,
+            "refresh_token": session.refresh_token,
+            "payload": payload
+        },
+        "gid": session.user.gid
+    })
 
 
 @bp.route('/password/reset', methods=['POST'])

@@ -38,7 +38,17 @@ class Session(Document):
         """
         return cls.objects.get(session_id=session_id)
 
-    def generate_jwt(self, ttl: int=3600):
+    @classmethod
+    def find_with_refresh_token(cls, refresh_token):
+        """
+        query session with refresh token
+        :param refresh_token: target refresh token
+        :return: A single Session
+        :raises DoesNotExist if session was not found
+        """
+        return cls.objects.get(refresh_token=refresh_token)
+
+    def generate_jwt(self, ttl: int = 3600):
         """
         generate a new jwt token
         :param ttl: time to live in seconds
