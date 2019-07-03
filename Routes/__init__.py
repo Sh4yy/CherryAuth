@@ -38,6 +38,29 @@ def suc_resp(content):
     return JsonResponse(content)
 
 
+def extract_bearer(authorization):
+    """
+    extract bearer token from authorization header
+    :param authorization: Authorization header value
+    :return: token on success
+    :raises TokenDoesNotExist:
+    :raises InvalidMethod:
+    :raises InvalidValue:
+    """
+
+    if not authorization:
+        raise TokenDoesNotExist()
+
+    split = authorization.split(" ")
+    if len(split) != 2:
+        raise InvalidValue()
+
+    if split[0] != "Bearer":
+        raise InvalidMethod()
+
+    return split[0]
+
+
 @bp.route('/register', methods=['POST'])
 async def register(request: Request):
     """
@@ -85,13 +108,15 @@ async def logout(request: Request):
     """
     provide refresh token as Bearer token
     """
-    auth = request.headers.get('Authorization')
-    if not auth:
-        return err_resp(400, "missing authorization token")
 
-    method, token = auth.split(" ")
-    if not method or not token or method != "Bearer":
-        return err_resp(400, "bad authorization token")
+    try:
+        token = extract_bearer(request.headers.get("Authorization"))
+    except InvalidMethod:
+        err_resp(400, "bad authorization method")
+    except InvalidValue:
+        err_resp(400, "bad authorization token")
+    except TokenDoesNotExist:
+        return err_resp(400, "missing authorization token")
 
     try:
         session = Controllers.logout(token)
@@ -111,13 +136,15 @@ async def refresh_token(request: Request):
     refresh jwt token using refresh token
     Authorization: Bearer [Refresh Token]
     """
-    auth = request.headers.get('Authorization')
-    if not auth:
-        return err_resp(400, "missing authorization token")
 
-    method, token = auth.split(" ")
-    if not method or not token or method != "Bearer":
-        return err_resp(400, "bad authorization token")
+    try:
+        token = extract_bearer(request.headers.get("Authorization"))
+    except InvalidMethod:
+        err_resp(400, "bad authorization method")
+    except InvalidValue:
+        err_resp(400, "bad authorization token")
+    except TokenDoesNotExist:
+        return err_resp(400, "missing authorization token")
 
     try:
         session = Controllers.refresh_token(token)

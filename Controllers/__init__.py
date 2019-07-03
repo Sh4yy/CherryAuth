@@ -40,23 +40,23 @@ def login(gid, pswd):
     return session
 
 
-def logout(refresh_token):
+def logout(ref_token):
     """
     logout a user from a session
-    :param refresh_token: user's refresh token
+    :param ref_token: user's refresh token
     :return: Session instance
     """
 
-    session = Session.find_with_refresh_token(refresh_token)
+    session = Session.find_with_refresh_token(ref_token)
     session.delete()
     return session
 
 
-def refresh_token(refresh_token):
+def refresh_token(ref_token):
     """
     create a new jwt token
-    :param refresh_token: user's refresh token
+    :param ref_token: user's refresh token
     :return: Session instance
     """
 
-    return Session.find_with_refresh_token(refresh_token)
+    return Session.find_with_refresh_token(ref_token)

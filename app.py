@@ -2,8 +2,20 @@ from vibora import Vibora
 from Routes import bp
 
 
-app = Vibora(__name__)
-app.add_blueprint(bp, prefixes={"bp": "/v1"})
+def init_db():
+    """
+    initialize mongodb
+    credentials should be in config.json
+    :return: True on success
+    """
+    pass
 
 
-app.run(host="0.0.0.0", port=5001, debug=True)
+def create_app():
+    """
+    initialize the web server
+    :return: app on success
+    """
+    app = Vibora(__name__)
+    app.add_blueprint(bp, prefixes={"bp": "/v1"})
+    return app
