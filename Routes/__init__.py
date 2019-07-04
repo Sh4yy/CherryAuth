@@ -7,6 +7,7 @@ import Controllers
 from Utils.Exceptions import *
 from mongoengine import DoesNotExist
 from Utils import JWT
+from Utils.Caching import VerifyCache
 
 
 bp = Blueprint()
@@ -76,7 +77,7 @@ def extract_bearer(authorization):
     return split[1]
 
 
-@bp.route('/verify', methods=['POST'])
+@bp.route('/verify', methods=['POST'], cache=VerifyCache())
 async def verify(request: Request):
     """
     verify a user's jwt token
