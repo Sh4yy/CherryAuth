@@ -34,7 +34,8 @@ def login(uid, password):
     if not user:
         raise UserWasNotFound()
 
-    if not user.credentials.does_math(password):
+    credentials = user.credentials.get()
+    if not credentials.does_match(password):
         raise IncorrectCredentials()
 
     session = Session.init(user)
@@ -53,7 +54,7 @@ def logout(ref_token):
     if not session:
         raise RefreshTokenIsNotValid()
 
-    session.delete()
+    session.delete_instance()
     return session
 
 
@@ -80,7 +81,9 @@ def terminate_sessions(uid):
     if not sessions:
         return True
 
-    sessions.delete()
+    for session in sessions:
+        session.delete_instance()
+
     return True
 
 
@@ -98,13 +101,13 @@ def change_password(uid, old_password, new_password, kill_sessions=False):
 
     user = User.find_with_uid(uid)
     if not user:
-        raise UserWasNotFound
+        raise UserWasNotFound()
 
     credentials = user.credentials.get()
     if not credentials.does_match(old_password):
         raise WrongPassword()
 
-    credentials.change(new_password)
+    credentials.change(new_password).save()
 
     if kill_sessions:
         terminate_sessions(uid)

@@ -66,12 +66,9 @@ class BelongsToUser:
         """
         query item using user instance
         :param user: user instance
-        :return: BelongsToUser if found
+        :return: list of BelongsToUser if found
         """
-        return (cls
-                .select()
-                .where(cls.user == user.id)
-                .get())
+        return list(cls.select().where(cls.user == user.uid))
 
 
 class Session(BaseModel, BelongsToUser):
@@ -99,7 +96,7 @@ class Session(BaseModel, BelongsToUser):
         :param ttl: time to live in seconds
         :return: jwt token, payload
         """
-        return JWT.gen_jwt(self.session_id, self.user.gid, ttl)
+        return JWT.gen_jwt(self.session_id, self.user.uid, ttl)
 
     @classmethod
     def find_with_session_id(cls, session_id: str):
