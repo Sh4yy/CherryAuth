@@ -219,6 +219,7 @@ async def change_password(request: Request):
     all the currently active sessions.
     """
     try:
+
         gid, old_pswd = extract_basic(request.headers.get('Authorization'))
         json_data = await request.json()
 
