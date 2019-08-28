@@ -1,7 +1,7 @@
 from secrets import token_hex
 
 
-def gen_access_token(length=32):
+def gen_token(length=32):
     """
     generates access token
     in order to change access token's format

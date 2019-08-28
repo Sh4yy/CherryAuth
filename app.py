@@ -1,17 +1,14 @@
-from vibora import Vibora
-from Routes import bp
-from Utils import config, JWT
-from mongoengine import connect
+from sanic import Sanic
+from routes import bp
+from models import *
 
 
-def init_db():
+def create_db():
     """
-    initialize mongodb
-    credentials should be in config.json
+    initialize and create db models
     :return: True on success
     """
-    connect(config['database']['name'],
-            host=config['database']['url'])
+    db.create_tables([User, Session, Credentials])
     return True
 
 
@@ -20,8 +17,8 @@ def create_app():
     initialize the web server
     :return: app on success
     """
-    app = Vibora(__name__)
-    app.add_blueprint(bp, prefixes={"bp": "/v1"})
+    app = Sanic(__name__)
+    app.blueprint(bp, url_prefix="/v1")
     return app
 
 
@@ -33,6 +30,7 @@ def create_secret():
 
     try:
         JWT.gen_secret()
-        return True
     except Exception:
         return False
+
+    return True

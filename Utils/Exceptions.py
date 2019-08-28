@@ -25,3 +25,11 @@ class InvalidValue(AuthExceptions):
 
 class WrongPassword(AuthExceptions):
     pass
+
+
+class UserWasNotFound(AuthExceptions):
+    pass
+
+
+class RefreshTokenIsNotValid(AuthExceptions):
+    pass

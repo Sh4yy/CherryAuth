@@ -18,7 +18,7 @@ Register a new User/Identity.\
 **Response**:
 ```json
 {
-    "gid": "a2988ca209ad0907d3af9c1c3b7acb1e",
+    "uid": "a2988ca209ad0907d3af9c1c3b7acb1e",
     "reg_date": 1562184696,
     "ok": true,
     "timestamp": 1562184696.5919928551
@@ -62,7 +62,7 @@ Create a new JWT token for a User/Identity.\
             "uid": "a2988ca209ad0907d3af9c1c3b7acb1e"
         }
     },
-    "gid": "a2988ca209ad0907d3af9c1c3b7acb1e",
+    "uid": "a2988ca209ad0907d3af9c1c3b7acb1e",
     "ok": true,
     "timestamp": 1562185055.7063784599
 }
@@ -103,7 +103,7 @@ Terminate a session for a User.\
 {
     "logged_out": true,
     "token": "226c1a30f26c9af6a825b29d4204990e43446e5bab690d5134ddd70ab20725f2",
-    "gid": "a2988ca209ad0907d3af9c1c3b7acb1e",
+    "uid": "a2988ca209ad0907d3af9c1c3b7acb1e",
     "ok": true,
     "timestamp": 1562185790.1397087574
 }
@@ -164,7 +164,7 @@ Refreshing a JWT token after its expired.\
             "uid": "a2988ca209ad0907d3af9c1c3b7acb1e"
         }
     },
-    "gid": "a2988ca209ad0907d3af9c1c3b7acb1e",
+    "uid": "a2988ca209ad0907d3af9c1c3b7acb1e",
     "ok": true,
     "timestamp": 1562186149.7159590721
 }

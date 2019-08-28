@@ -1,40 +1,40 @@
-from Models import User, Credentials, Session
+from models import User, Credentials, Session
 from Utils.Exceptions import *
-from mongoengine import DoesNotExist
 
 
-def register(gid, pswd):
+def register(uid, password):
     """
     register a new user
-    :param gid: user's global id
-    :param pswd: user's password
+    :param uid: user's global id
+    :param password: user's password
     :return: user instance
     :raises UserAlreadyExist:
     """
 
-    try:
-        User.find_with_gid(gid)
+    if User.find_with_uid(uid) is not None:
         raise UserAlreadyExist()
-    except DoesNotExist:
-        pass
 
-    credentials = Credentials.init_and_salt(pswd)
-    user = User.register(gid, credentials=credentials)
+    user = User.register(uid)
+    Credentials.init(user, password)
+
     return user
 
 
-def login(gid, pswd):
+def login(uid, password):
     """
     login a user
-    :param gid: user's global id
-    :param pswd: user's password
+    :param uid: user's global id
+    :param password: user's password
     :return: Session instance
-    :raises DoesNotExist:
-    :raise IncorrectCredentials:
+    :raises IncorrectCredentials:
+    :raises UserWasNotFound:
     """
 
-    user = User.find_with_gid(gid)
-    if not user.credentials.does_math(pswd):
+    user = User.find_with_uid(uid)
+    if not user:
+        raise UserWasNotFound()
+
+    if not user.credentials.does_math(password):
         raise IncorrectCredentials()
 
     session = Session.init(user)
@@ -46,9 +46,13 @@ def logout(ref_token):
     logout a user from a session
     :param ref_token: user's refresh token
     :return: Session instance
+    :raises RefreshTokenIsNotValid
     """
 
     session = Session.find_with_refresh_token(ref_token)
+    if not session:
+        raise RefreshTokenIsNotValid()
+
     session.delete()
     return session
 
@@ -63,15 +67,15 @@ def refresh_token(ref_token):
     return Session.find_with_refresh_token(ref_token)
 
 
-def terminate_sessions(gid):
+def terminate_sessions(uid):
     """
     terminate all sessions for a user
-    :param gid: user's gid
+    :param uid: user's uid
     :return: True on success
     :raises DoesNotExist: if user was not found
     """
 
-    user = User.find_with_gid(gid)
+    user = User.find_with_uid(uid)
     sessions = Session.find_with_user(user)
     if not sessions:
         return True
@@ -80,26 +84,29 @@ def terminate_sessions(gid):
     return True
 
 
-def change_password(gid, old_pswd, new_pswd, kill_sessions=False):
+def change_password(uid, old_password, new_password, kill_sessions=False):
     """
     change user's password
-    :param gid: user's gid
-    :param old_pswd: user's old password
-    :param new_pswd: user's new password
+    :param uid: user's uid
+    :param old_password: user's old password
+    :param new_password: user's new password
     :param kill_sessions: terminate all active sessions
     :return: True on success
-    :raises DoesNotExist: if user was not found
+    :raises UserWasNotFound: if user was not found
     :raises WrongPassword: if old password is not valid
     """
 
-    user = User.find_with_gid(gid)
-    if not user.credentials.does_math(old_pswd):
+    user = User.find_with_uid(uid)
+    if not user:
+        raise UserWasNotFound
+
+    credentials = user.credentials.get()
+    if not credentials.does_match(old_password):
         raise WrongPassword()
 
-    user.credentials = Credentials.init_and_salt(new_pswd)
-    user.save()
+    credentials.change(new_password)
 
     if kill_sessions:
-        terminate_sessions(gid)
+        terminate_sessions(uid)
 
     return True

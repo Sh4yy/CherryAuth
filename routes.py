@@ -1,16 +1,15 @@
-from vibora.responses import JsonResponse
-from vibora.blueprints import Blueprint
-from vibora import Request
+from sanic.response import json
 from time import time
 import basicauth
-import Controllers
+import controllers
 from Utils.Exceptions import *
 from mongoengine import DoesNotExist
 from Utils import JWT
-from Utils.Caching import VerifyCache
+from sanic import Blueprint
+# from Utils.Caching import VerifyCache
 
 
-bp = Blueprint()
+bp = Blueprint('routes')
 
 
 def err_resp(code: int, msg: str, err_subcode=None):
@@ -21,13 +20,13 @@ def err_resp(code: int, msg: str, err_subcode=None):
     :param err_subcode: specific error details
     :return: JsonResponse
     """
-    return JsonResponse({
+    return json({
         "ok": False,
         "code": code,
         "msg": msg,
         "timestamp": time(),
         "error_subcode": err_subcode
-    }, status_code=code)
+    }, status=code)
 
 
 def suc_resp(content):
@@ -38,14 +37,14 @@ def suc_resp(content):
     """
     content['ok'] = True
     content['timestamp'] = time()
-    return JsonResponse(content)
+    return json(content)
 
 
 def extract_basic(authorization):
     """
     extract basic authorization from header
     :param authorization: Authorization header value
-    :return: gid, password on success
+    :return: uid, password on success
     :raises TokenDoesNotExist:
     """
     if not authorization:
@@ -77,8 +76,9 @@ def extract_bearer(authorization):
     return split[1]
 
 
-@bp.route('/verify', methods=['POST'], cache=VerifyCache())
-async def verify(request: Request):
+# @bp.route('/verify', methods=['POST'], cache=VerifyCache())
+@bp.post('/verify')
+def verify(request):
     """
     verify a user's jwt token
     """
@@ -104,19 +104,20 @@ async def verify(request: Request):
         return err_resp(401, "invalid token")
 
 
-@bp.route('/register', methods=['POST'])
-async def register(request: Request):
+# @bp.route('/register', methods=['POST'])
+@bp.route('/register')
+def register(request):
     """
     register a new user
-    provide user gid and password to register
-    Authorization: Basic gid:password
+    provide user uid and password to register
+    Authorization: Basic uid:password
     """
     try:
 
-        gid, pswd = extract_basic(request.headers.get('Authorization'))
-        user = Controllers.register(gid, pswd)
+        uid, pswd = extract_basic(request.headers.get('Authorization'))
+        user = controllers.register(uid, pswd)
         return suc_resp({
-            "gid": user.gid,
+            "uid": user.uid,
             "reg_date": user.reg_date
         })
 
@@ -126,16 +127,17 @@ async def register(request: Request):
         return err_resp(400, "user already exist")
 
 
-@bp.route('/login', methods=['GET'])
-async def login(request: Request):
+# @bp.route('/login', methods=['GET'])
+@bp.get('/login')
+def login(request):
     """
     login a user
-    provide user gid and password as basic auth
+    provide user uid and password as basic auth
     """
     try:
 
-        gid, pswd = extract_basic(request.headers.get('Authorization'))
-        session = Controllers.login(gid, pswd)
+        uid, pswd = extract_basic(request.headers.get('Authorization'))
+        session = controllers.login(uid, pswd)
         jwt_token, payload = session.generate_jwt()
         return suc_resp({
             "jwt": {
@@ -143,7 +145,7 @@ async def login(request: Request):
                 "refresh_token": session.refresh_token,
                 "payload": payload
             },
-            "gid": gid
+            "uid": uid
         })
 
     except TokenDoesNotExist:
@@ -154,19 +156,20 @@ async def login(request: Request):
         return err_resp(401, "incorrect credentials")
 
 
-@bp.route('/logout', methods=['POST'])
-async def logout(request: Request):
+# @bp.route('/logout', methods=['POST'])
+@bp.post('/logout')
+def logout(request):
     """
     provide refresh token as Bearer token
     """
     try:
 
         token = extract_bearer(request.headers.get("Authorization"))
-        session = Controllers.logout(token)
+        session = controllers.logout(token)
         return suc_resp({
             "logged_out": True,
             "token": token,
-            "gid": session.user.gid
+            "uid": session.user.uid
         })
 
     except InvalidMethod:
@@ -179,8 +182,9 @@ async def logout(request: Request):
         return err_resp(404, "session does not exist")
 
 
-@bp.route('/token/refresh', methods=['GET'])
-async def refresh_token(request: Request):
+# @bp.route('/token/refresh', methods=['GET'])
+@bp.get('/token/refresh')
+def refresh_token(request):
     """
     refresh jwt token using refresh token
     Authorization: Bearer [Refresh Token]
@@ -188,7 +192,7 @@ async def refresh_token(request: Request):
     try:
 
         token = extract_bearer(request.headers.get("Authorization"))
-        session = Controllers.refresh_token(token)
+        session = controllers.refresh_token(token)
         jwt_token, payload = session.generate_jwt()
         return suc_resp({
             "jwt": {
@@ -196,7 +200,7 @@ async def refresh_token(request: Request):
                 "refresh_token": session.refresh_token,
                 "payload": payload
             },
-            "gid": session.user.gid
+            "uid": session.user.uid
         })
 
     except InvalidMethod:
@@ -209,8 +213,9 @@ async def refresh_token(request: Request):
         return err_resp(404, "session does not exist")
 
 
-@bp.route('/password/change', methods=['POST'])
-async def change_password(request: Request):
+# @bp.route('/password/change', methods=['POST'])
+@bp.post('/password/change')
+def change_password(request):
     """
     change user's password
     requires old password as basic authorization
@@ -220,14 +225,14 @@ async def change_password(request: Request):
     """
     try:
 
-        gid, old_pswd = extract_basic(request.headers.get('Authorization'))
-        json_data = await request.json()
+        uid, old_pswd = extract_basic(request.headers.get('Authorization'))
+        json_data = request.json()
 
         if 'new_password' not in json_data:
             return err_resp(400, 'missing new_password field')
         new_password = json_data.get('new_password')
         kill_sessions = json_data.get('kill_sessions', False)
-        Controllers.change_password(gid, old_pswd, new_password, kill_sessions)
+        controllers.change_password(uid, old_pswd, new_password, kill_sessions)
         return suc_resp({
             "changed_password": True,
             "killed_sessions": kill_sessions,
@@ -235,20 +240,22 @@ async def change_password(request: Request):
 
     except TokenDoesNotExist:
         return err_resp(400, "missing authorization header")
-    except DoesNotExist:
-        return err_resp(404, "user does not exist")
+    except UserWasNotFound:
+        return err_resp(404, "user was not found")
     except WrongPassword:
         return err_resp(401, "incorrect credentials")
 
 
-@bp.route('/password/reset/request', methods=['POST'])
-async def reset_password_request(request: Request):
+# @bp.route('/password/reset/request', methods=['POST'])
+@bp.post('/password/reset/request')
+def reset_password_request(request):
     # issue temp token for password reset
     pass
 
 
-@bp.route('/password/reset', methods=['POST'])
-async def reset_password(request: Request):
+# @bp.route('/password/reset', methods=['POST'])
+@bp.post('/password/reset')
+def reset_password(request):
     # provide password token for reset
     pass
 

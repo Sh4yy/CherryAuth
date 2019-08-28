@@ -1,21 +1,14 @@
 from peewee import *
 from datetime import datetime, timedelta
 from Utils.IDGenerator import gen_token
-from Utils import Salting, JWT
+from Utils import Salting, JWT, db
 from threading import Thread
 
 
 class BaseModel(Model):
-    class Meta:
-        database = None
 
-    def save(self, *args, **kwargs):
-        """
-        save instance + return self
-        :return: self
-        """
-        super(Model).save(*args, **kwargs)
-        return self
+    class Meta:
+        database = db
 
 
 class User(BaseModel):
@@ -31,7 +24,22 @@ class User(BaseModel):
         :return: User instance
         """
 
-        return cls.create(uid=uid).save()
+        obj = cls.create(uid=uid)
+        obj.save()
+
+        return obj
+
+    @classmethod
+    def find_with_uid(cls, uid):
+        """
+        query user using their uid
+        :param uid: targeted uid
+        :return: User if found
+        """
+        return (cls
+                .select()
+                .where(cls.uid == uid)
+                .first())
 
     def __str__(self):
         return f"<User(uid={self.uid})>"
@@ -40,7 +48,7 @@ class User(BaseModel):
         return self.__str__()
 
 
-class BelongsToUser(BaseModel):
+class BelongsToUser:
 
     user = ForeignKeyField(User)
 
@@ -51,7 +59,7 @@ class BelongsToUser(BaseModel):
         :param user: user instance
         :return: True if belongs to user, else false
         """
-        return self.user == user.id
+        return self.user == user
 
     @classmethod
     def find_with_user(cls, user: User):
@@ -72,6 +80,18 @@ class Session(BaseModel, BelongsToUser):
     refresh_token = TextField(unique=True, default=lambda: gen_token(32))
     date_created = DateTimeField(default=datetime.utcnow)
     last_activity = DateTimeField(default=datetime.utcnow)
+    user = ForeignKeyField(User)
+
+    @classmethod
+    def init(cls, user):
+        """
+        create a new Session
+        :param user: user's instance
+        :return: Session
+        """
+        obj = cls.create(user=user)
+        obj.save()
+        return obj
 
     def gen_jwt(self, ttl: int = timedelta(days=1).seconds):
         """
@@ -134,7 +154,7 @@ class Credentials(BaseModel, BelongsToUser):
     date_created = DateTimeField(default=datetime.utcnow)
 
     @classmethod
-    def new(cls, user: User, password: str):
+    def init(cls, user: User, password: str):
         """
         initialize a new Credentials instance for user
         :param user: target user
@@ -142,7 +162,22 @@ class Credentials(BaseModel, BelongsToUser):
         :return: Credentials on success
         :raises IntegrityError: if credentials already exist
         """
-        return cls.create(user=user).change(password).save()
+
+        password, salt = cls._create_salt_password(password)
+        obj = cls.create(user=user, password=password, salt=salt)
+        obj.save()
+        return obj
+
+    @staticmethod
+    def _create_salt_password(new_password):
+        """
+        create salt + hashed pass
+        :param new_password: new password as str
+        :return: password, salt
+        """
+        salt = Salting.gen_salt()
+        password = Salting.hash_pswd(new_password, salt)
+        return password, salt
 
     def change(self, new_password: str):
         """
@@ -150,8 +185,7 @@ class Credentials(BaseModel, BelongsToUser):
         :param new_password: new password
         :return: self
         """
-        self.salt = Salting.gen_salt()
-        self.password = Salting.hash_pswd(new_password, self.salt)
+        self.password, self.salt = self._create_salt_password(new_password)
         return self
 
     def does_match(self, password: str):
@@ -160,7 +194,10 @@ class Credentials(BaseModel, BelongsToUser):
         :param password: given password
         :return: True if matches
         """
-        return Salting.validate_pswd(self.password, self.salt, password)
+        return Salting.validate_pswd(
+            hashed_password=self.password.tobytes(),
+            salt=self.salt.tobytes(),
+            password=password)
 
     def __str__(self):
         return f"<Credentials(user={self.user.id})>"
