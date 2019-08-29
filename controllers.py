@@ -1,5 +1,7 @@
 from models import User, Credentials, Session
 from Utils.Exceptions import *
+from Utils.CacheEngine import Cache
+from Utils import JWT
 
 
 def register(uid, password):
@@ -85,6 +87,25 @@ def terminate_sessions(uid):
         session.delete_instance()
 
     return True
+
+
+def verify_jwt_token(jwt_token):
+    """
+    verify if a token is valid
+    :param jwt_token: target jwt token
+    :return: payload
+    :raises ExpiredSignatureError: if signature is expired
+    :raises InvalidSignatureError: if signature is not valid
+    :raises InvalidTokenError: for the rest of the token errors
+    """
+
+    payload = Cache.lookup_jwt(jwt_token)
+
+    if payload is None:
+        payload = JWT.verify_jwt(jwt_token)
+        Cache.set_jwt(jwt_token, payload, ttl=30)
+
+    return payload
 
 
 def change_password(uid, old_password, new_password, kill_sessions=False):

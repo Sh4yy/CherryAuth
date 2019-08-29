@@ -120,9 +120,9 @@ class TestAuthTokens(TestCase):
         register(uid, password)
 
         session = login(uid, password)
-        jwt_token, payload1 = session.gen_jwt(ttl=timedelta(minutes=5).seconds)
+        jwt_token, payload1 = session.gen_jwt(ttl=timedelta(minutes=5).total_seconds())
 
-        payload2 = JWT.verify_jwt(jwt_token)
+        payload2 = verify_jwt_token(jwt_token)
 
         self.assertEqual(payload1, payload2)
 
@@ -132,10 +132,23 @@ class TestAuthTokens(TestCase):
         register(uid, password)
 
         session = login(uid, password)
-        jwt_token, payload1 = session.gen_jwt(ttl=timedelta(seconds=5).seconds)
+        jwt_token, payload1 = session.gen_jwt(ttl=timedelta(seconds=5).total_seconds())
 
         sleep(6)
-        self.assertRaises(JWT.ExpiredSignatureError, JWT.verify_jwt, jwt_token)
+        self.assertRaises(JWT.ExpiredSignatureError, verify_jwt_token, jwt_token)
+
+    def test_jwt_cache(self):
+
+        uid, password = uuid4().hex, uuid4().hex
+        user = register(uid, password)
+        token, payload = login(uid, password).gen_jwt(ttl=3600)
+
+        # perform jwt verification
+        self.assertEqual(verify_jwt_token(token)['uid'], user.uid)
+
+        # perform jwt from cache
+        for _ in range(1000):
+            self.assertEqual(verify_jwt_token(token)['uid'], user.uid)
 
     def test_jwt_invalid_signature(self):
 
@@ -149,7 +162,7 @@ class TestAuthTokens(TestCase):
 
         signature = ''.join(sign_list)
         jwt_token_new = f"{header}.{payload}.{signature}".encode()
-        self.assertRaises(JWT.InvalidSignatureError, JWT.verify_jwt, jwt_token_new)
+        self.assertRaises(JWT.InvalidSignatureError, verify_jwt_token, jwt_token_new)
 
     def test_refresh_token_jwt_request(self):
 
@@ -162,7 +175,7 @@ class TestAuthTokens(TestCase):
         session2 = refresh_token(session.refresh_token)
         jwt_token, _ = session2.gen_jwt(ttl=5)
 
-        payload1 = JWT.verify_jwt(jwt_token)
+        payload1 = verify_jwt_token(jwt_token)
 
         self.assertEqual(payload['uid'], payload1['uid'])
 
@@ -186,7 +199,14 @@ class TestAuthTokens(TestCase):
 class TestLogout(TestCase):
 
     def test_logout(self):
-        pass
+
+        uid, password = uuid4().hex, uuid4().hex
+        user = register(uid, password)
+
+        session = login(uid, password)
+        logout(session.refresh_token)
+
+        self.assertEqual(Session.find_with_user(user), [])
 
 
 if __name__ == '__main__':

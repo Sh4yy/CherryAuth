@@ -10,7 +10,8 @@ def main():
 
     create_db()
     create_secret()
-    create_app().run(host="0.0.0.0", port=5001, debug=True)
+    (create_app()
+        .run(host="0.0.0.0", port=5001, debug=True))
 
 
 if __name__ == '__main__':

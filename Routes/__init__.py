@@ -1,93 +1,26 @@
-from sanic.response import json
-from time import time
-import basicauth
 import controllers
-from Utils.Exceptions import *
 from mongoengine import DoesNotExist
 from Utils import JWT
 from sanic import Blueprint
-# from Utils.Caching import VerifyCache
+from Utils.RouteUtils import *
 
 
-bp = Blueprint('routes')
+bp = Blueprint('auth_routes')
 
 
-def err_resp(code: int, msg: str, err_subcode=None):
-    """
-    generate error response
-    :param code: error code
-    :param msg: error msg
-    :param err_subcode: specific error details
-    :return: JsonResponse
-    """
-    return json({
-        "ok": False,
-        "code": code,
-        "msg": msg,
-        "timestamp": time(),
-        "error_subcode": err_subcode
-    }, status=code)
-
-
-def suc_resp(content):
-    """
-    generate success response
-    :param content: resp content
-    :return: JsonResponse
-    """
-    content['ok'] = True
-    content['timestamp'] = time()
-    return json(content)
-
-
-def extract_basic(authorization):
-    """
-    extract basic authorization from header
-    :param authorization: Authorization header value
-    :return: uid, password on success
-    :raises TokenDoesNotExist:
-    """
-    if not authorization:
-        raise TokenDoesNotExist()
-
-    return basicauth.decode(authorization)
-
-
-def extract_bearer(authorization):
-    """
-    extract bearer token from authorization header
-    :param authorization: Authorization header value
-    :return: token on success
-    :raises TokenDoesNotExist:
-    :raises InvalidMethod:
-    :raises InvalidValue:
-    """
-
-    if not authorization:
-        raise TokenDoesNotExist()
-
-    split = authorization.split(" ")
-    if len(split) != 2:
-        raise InvalidValue()
-
-    if split[0] != "Bearer":
-        raise InvalidMethod()
-
-    return split[1]
-
-
-# @bp.route('/verify', methods=['POST'], cache=VerifyCache())
-@bp.post('/verify')
-def verify(request):
+@bp.post('/verify', version=1)
+async def verify(request):
     """
     verify a user's jwt token
     """
     try:
 
         jwt_token = extract_bearer(request.headers.get('Authorization'))
+        payload = controllers.verify_jwt_token(jwt_token)
+
         return suc_resp({
             "valid": True,
-            "payload": JWT.verify_jwt(jwt_token)
+            "payload": payload
         })
 
     except TokenDoesNotExist:
@@ -104,9 +37,8 @@ def verify(request):
         return err_resp(401, "invalid token")
 
 
-# @bp.route('/register', methods=['POST'])
-@bp.route('/register')
-def register(request):
+@bp.post('/register', version=1)
+async def register(request):
     """
     register a new user
     provide user uid and password to register
@@ -118,7 +50,7 @@ def register(request):
         user = controllers.register(uid, pswd)
         return suc_resp({
             "uid": user.uid,
-            "reg_date": user.reg_date
+            "reg_date": user.date_created
         })
 
     except TokenDoesNotExist:
@@ -127,9 +59,8 @@ def register(request):
         return err_resp(400, "user already exist")
 
 
-# @bp.route('/login', methods=['GET'])
-@bp.get('/login')
-def login(request):
+@bp.get('/login', version=1)
+async def login(request):
     """
     login a user
     provide user uid and password as basic auth
@@ -138,7 +69,8 @@ def login(request):
 
         uid, pswd = extract_basic(request.headers.get('Authorization'))
         session = controllers.login(uid, pswd)
-        jwt_token, payload = session.generate_jwt()
+        jwt_token, payload = session.gen_jwt(ttl=timedelta(days=7).total_seconds())
+
         return suc_resp({
             "jwt": {
                 "token": jwt_token,
@@ -156,9 +88,8 @@ def login(request):
         return err_resp(401, "incorrect credentials")
 
 
-# @bp.route('/logout', methods=['POST'])
-@bp.post('/logout')
-def logout(request):
+@bp.post('/logout', version=1)
+async def logout(request):
     """
     provide refresh token as Bearer token
     """
@@ -183,8 +114,8 @@ def logout(request):
 
 
 # @bp.route('/token/refresh', methods=['GET'])
-@bp.get('/token/refresh')
-def refresh_token(request):
+@bp.get('/token/refresh', version=1)
+async def refresh_token(request):
     """
     refresh jwt token using refresh token
     Authorization: Bearer [Refresh Token]
@@ -213,9 +144,8 @@ def refresh_token(request):
         return err_resp(404, "session does not exist")
 
 
-# @bp.route('/password/change', methods=['POST'])
-@bp.post('/password/change')
-def change_password(request):
+@bp.post('/password/change', version=1)
+async def change_password(request):
     """
     change user's password
     requires old password as basic authorization
@@ -246,16 +176,14 @@ def change_password(request):
         return err_resp(401, "incorrect credentials")
 
 
-# @bp.route('/password/reset/request', methods=['POST'])
-@bp.post('/password/reset/request')
-def reset_password_request(request):
+@bp.post('/password/reset/request', version=1)
+async def reset_password_request(request):
     # issue temp token for password reset
     pass
 
 
-# @bp.route('/password/reset', methods=['POST'])
-@bp.post('/password/reset')
-def reset_password(request):
+@bp.post('/password/reset', version=1)
+async def reset_password(request):
     # provide password token for reset
     pass
 

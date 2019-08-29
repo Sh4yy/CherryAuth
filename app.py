@@ -1,5 +1,5 @@
 from sanic import Sanic
-from routes import bp
+from Routes import bp
 from models import *
 
 
@@ -18,7 +18,8 @@ def create_app():
     :return: app on success
     """
     app = Sanic(__name__)
-    app.blueprint(bp, url_prefix="/v1")
+    app.blueprint(bp)
+
     return app
 
 

@@ -1,5 +1,5 @@
 from peewee import *
-from datetime import datetime, timedelta
+from datetime import datetime
 from Utils.IDGenerator import gen_token
 from Utils import Salting, JWT, db
 from threading import Thread
@@ -90,7 +90,7 @@ class Session(BaseModel, BelongsToUser):
         obj.save()
         return obj
 
-    def gen_jwt(self, ttl: int = timedelta(days=1).seconds):
+    def gen_jwt(self, ttl: int = 3600):
         """
         generate a new jwt token
         :param ttl: time to live in seconds

@@ -42,13 +42,15 @@ def gen_jwt(sid: str, uid: str, ttl: int, algorithm='HS256'):
     :return: jwt token (str), payload
     """
     iat = datetime.utcnow()
-    exp = datetime.utcnow() + timedelta(seconds=ttl)
+    exp = iat + timedelta(seconds=ttl)
+
     payload = {
         "sid": sid,
         "iat": iat,
         "exp": exp,
         "uid": uid
     }
+
     return jwt.encode(payload, key=get_secret(),
                       algorithm=algorithm), payload
 
