@@ -1,4 +1,4 @@
-from app import init_db, create_app, create_secret
+from app import create_app, create_secret, create_db
 
 
 def main():
@@ -8,9 +8,10 @@ def main():
     run the webserver
     """
 
-    init_db()
+    create_db()
     create_secret()
-    create_app().run(host="0.0.0.0", port=5001, debug=True)
+    (create_app()
+        .run(host="0.0.0.0", port=5001, debug=True))
 
 
 if __name__ == '__main__':

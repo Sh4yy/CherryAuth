@@ -1,3 +1,5 @@
+redis
+peewee
 aiofiles==0.4.0
 basicauth==0.4.1
 cachetools==3.1.1
