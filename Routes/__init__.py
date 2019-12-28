@@ -156,7 +156,7 @@ async def change_password(request):
     try:
 
         uid, old_pswd = extract_basic(request.headers.get('Authorization'))
-        json_data = request.json()
+        json_data = request.json
 
         if 'new_password' not in json_data:
             return err_resp(400, 'missing new_password field')
