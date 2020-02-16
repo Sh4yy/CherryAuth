@@ -7,13 +7,15 @@ db = PostgresqlDatabase(
     config['database']['name'],
     user=config['database']['user'],
     host=config['database']['host'],
-    port=config['database']['port']
+    port=config['database']['port'],
+    password=config['database'].get('password')
 )
 
 redis = Redis(
     host=config['redis']['host'],
     port=config['redis']['port'],
-    db=config['redis']['db']
+    db=config['redis']['db'],
+    password=config['redis'].get('password')
 )
 
 
