@@ -14,7 +14,7 @@ hyperframe==5.2.0
 idna==2.8
 mongoengine==0.18.2
 multidict==4.5.2
-numpy==1.16.4
+numpy==1.22.0
 pendulum==2.0.4
 PyJWT==1.7.1
 pymongo==3.8.0
